@@ -1,26 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MONTH_INDEX 3
+#define DAY_INDEX 2
 
-char get_date(char line[], int date_type) {
+void get_date(char line[], char *buf[]) {
   char* ptr = strtok(line, " ");
   int i = 0;
-  while (ptr != NULL && i <= date_type) {
-    if (i == date_type) {
-      return *ptr;
-    }
+  while (ptr != NULL) {
+    buf[i] = ptr;
     ptr = strtok(NULL, " ");
     i = i + 1;
   }
-  return '*';
 }
 
 int main(int argc, char *argv[]) {
   FILE *dict;
   char line[100];
-  char month;
+  char *date[5];
 
   dict = fopen("crontab-file.txt", "r");
   if (dict==NULL) {
@@ -31,9 +30,9 @@ int main(int argc, char *argv[]) {
     if (line[0] == '#') {
       continue;
     }
-    month = get_date(line, MONTH_INDEX);
-    if (month == *argv[1]) {
-      printf("This is the %cth month of the year\n", month);
+    get_date(line, date);
+    for (int i=0; i<5; i++){
+      printf("%s\n", date[i]);
     }
   }
 
