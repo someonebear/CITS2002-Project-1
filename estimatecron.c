@@ -27,7 +27,19 @@ void get_date(char line[], char *buf[]) {
   }
 }
 
-void simulate(char *tasks[], int month, int* total_command, int* max_command, char* most_command){
+int is_now(char *file_time, int time) {
+  if (*file_time == '*') {
+    return 1;
+  }
+  char time_str[3];
+  sprintf(time_str, "%i", time);
+  if (strcmp(file_time, time_str) == 0) {
+    return 1;
+  }
+  return 0;
+}
+
+void simulate(char *tasks[], char *task_estimates[], int month, int* total_command, int* max_command, char* most_command){
   int minutes = 0;
   int hours = 0;
   int day = 1;
@@ -45,14 +57,24 @@ void simulate(char *tasks[], int month, int* total_command, int* max_command, ch
     for (int i = 0; i < 20; i++) {
       if (tasks[i*6+TASK_NAME_INDEX] == NULL) {
         break;
-      } else if (*tasks[i*6+DAY_INDEX] == day || *tasks[i*6+DAY_INDEX] == '*') {
+      } else if (is_now(tasks[i*6+MINUTE_INDEX], minutes) == 1) {
+        // printf("%s is equal to %i\n", tasks[i*6+MINUTE_INDEX], minutes);
+        if (is_now(tasks[i*6+HOUR_INDEX], hours) == 1) {
+          if (is_now(tasks[i*6+DAY_INDEX], day) == 1) {
+            if (is_now(tasks[i*6+MONTH_INDEX], month) == 1) {
+              printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
+            }
+          } 
+        } else {
+          // printf("File is %s, hour is %i", tasks[i*6+HOUR_INDEX], hours);
+        }
         // printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
       }
     } 
-    // printf("Minute:%i, Hour:%i, Day:%i", minutes, hours, day);
     minutes = minutes + 1;
   }
 }
+
 
 
 
@@ -98,8 +120,8 @@ int main(int argc, char *argv[]) {
 
   int *total_command = 0;
   int *max_command = 0;
-  char *most_command = (char *) malloc(20);
-  simulate(tasks, *argv[1], total_command, max_command, most_command);
+  char *most_command = (char *) malloc(40);
+  simulate(tasks, task_times, *argv[1], total_command, max_command, most_command);
   // for (int k=0; k<5; k++) {
   //   for (int l=0; l<2; l++){
   //     if (task_times[k*2+l] == NULL) {
@@ -110,6 +132,7 @@ int main(int argc, char *argv[]) {
   // }
 
   fclose(schedule);
+  fclose(estimates);
   return 0;
 }
 
