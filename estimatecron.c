@@ -75,12 +75,26 @@ void simulate(char *tasks[], char *task_estimates[], int month, int* total_comma
   }
 }
 
-
+void parse_file(FILE *ptr, char *buf[], char *dest[], int columns) {
+  int i = 0;
+  char line[100];
+  while (fgets(line, sizeof line, ptr) != NULL) {
+    if (line[0] == '#') {
+      continue;
+    }
+    get_date(line, buf);
+    for (int j=0; j<columns; j++) {
+      dest[i*columns+j] = (char *) malloc(sizeof(buf[j])+1);
+      strcpy(dest[i*columns+j], buf[j]);
+    }
+    i = i + 1;
+  }
+}
 
 
 int main(int argc, char *argv[]) {
   FILE *schedule, *estimates;
-  char line[100];
+  // char line[100];
   char *date[6];
   char *tasks[120] = {NULL};
   char *task_times[20] = {NULL};
@@ -92,31 +106,33 @@ int main(int argc, char *argv[]) {
   }
 
   // Reading file into array
-  int j = 0;
-  while (fgets(line, sizeof line, schedule) != NULL) {
-    if (line[0] == '#') {
-      continue;
-    }
-    get_date(line, date);
-    for (int i=0; i<6; i++){
-      tasks[j*6+i] = (char *) malloc(sizeof(date[i])+1);
-      strcpy(tasks[j*6+i], date[i]);
-    }
-    j = j + 1;
-  }
+  parse_file(schedule, date, tasks, 6);
+  parse_file(estimates, date, task_times, 2);
+  // int j = 0;
+  // while (fgets(line, sizeof line, schedule) != NULL) {
+  //   if (line[0] == '#') {
+  //     continue;
+  //   }
+  //   get_date(line, date);
+  //   for (int i=0; i<6; i++){
+  //     tasks[j*6+i] = (char *) malloc(sizeof(date[i])+1);
+  //     strcpy(tasks[j*6+i], date[i]);
+  //   }
+  //   j = j + 1;
+  // }
 
-  int m = 0;
-  while (fgets(line, sizeof line, estimates) != NULL) {
-    if (line[0] == '#') {
-      continue;
-    }
-    get_date(line, date);
-    for (int n=0; n<2; n++) {
-      task_times[m*2+n] = (char *) malloc(sizeof(date[n])+1);
-      strcpy(task_times[m*2+n], date[n]);
-    }
-    m = m + 1;
-  }
+  // int m = 0;
+  // while (fgets(line, sizeof line, estimates) != NULL) {
+  //   if (line[0] == '#') {
+  //     continue;
+  //   }
+  //   get_date(line, date);
+  //   for (int n=0; n<2; n++) {
+  //     task_times[m*2+n] = (char *) malloc(sizeof(date[n])+1);
+  //     strcpy(task_times[m*2+n], date[n]);
+  //   }
+  //   m = m + 1;
+  // }
 
   int *total_command = 0;
   int *max_command = 0;
