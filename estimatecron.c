@@ -3,8 +3,12 @@
 #include <string.h>
 #include <ctype.h>
 
+#define TASK_NAME_INDEX 5
+#define WEEKDAY_INDEX 4
 #define MONTH_INDEX 3
 #define DAY_INDEX 2
+#define HOUR_INDEX 1
+#define MINUTE_INDEX 0
 
 void get_date(char line[], char *buf[]) {
   char* ptr = strtok(line, " ");
@@ -16,19 +20,47 @@ void get_date(char line[], char *buf[]) {
   }
 }
 
- 
+void simulate(char *tasks[], int month, int* total_command, int* max_command, char* most_command){
+  int minutes = 0;
+  int hours = 0;
+  int day = 1;
+
+  while (day<31) {
+    if (minutes == 60) {
+      hours = hours + 1;
+      minutes = 0;
+    }
+    if (hours == 24) {
+      day = day + 1;
+      hours = 0;
+    }
+
+    for (int i = 0; i < 20; i++) {
+      if (tasks[i*6+TASK_NAME_INDEX] == NULL) {
+        break;
+      } else if (*tasks[i*6+DAY_INDEX] == day || *tasks[i*6+DAY_INDEX] == '*') {
+        printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
+      }
+    } 
+    // printf("Minute:%i, Hour:%i, Day:%i", minutes, hours, day);
+    minutes = minutes + 1;
+  }
+}
+
+
 
 int main(int argc, char *argv[]) {
   FILE *dict;
   char line[100];
   char *date[6];
-  char *tasks[120];
+  char *tasks[120] = {NULL};
 
   dict = fopen("crontab-file.txt", "r");
   if (dict==NULL) {
     printf("error opening file\n");
   }
 
+  // Reading file into array
   int j = 0;
   while(fgets(line, sizeof line, dict) != NULL) {
     if (line[0] == '#') {
@@ -42,13 +74,21 @@ int main(int argc, char *argv[]) {
     j = j + 1;
   }
 
+  int *total_command = 0;
+  int *max_command = 0;
+  char *most_command = (char *) malloc(20);
+  simulate(tasks, *argv[1], total_command, max_command, most_command);
   // for (int k=0; k<5; k++) {
   //   for (int l=0; l<6; l++){
+  //     if (tasks[k*6+l] == NULL) {
+  //       break;
+  //     }
   //     printf("%s\n", tasks[k*6+l]);
   //   }
   // }
 
   fclose(dict);
-  free(tasks);
   return 0;
 }
+
+
