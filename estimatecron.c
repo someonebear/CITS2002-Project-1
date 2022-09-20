@@ -28,18 +28,58 @@ void get_date(char line[], char *buf[]) {
 }
 
 int is_now(char *file_time, int time) {
+  // char weekdays[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+  
   if (*file_time == '*') {
     return 1;
   }
   char time_str[3];
   sprintf(time_str, "%i", time);
+  
   if (strcmp(file_time, time_str) == 0) {
     return 1;
   }
   return 0;
 }
 
-void simulate(char *tasks[], char *task_estimates[], int month, int* total_command, int* max_command, char* most_command){
+int return_month(char *month_str) {
+  char months[12][4] = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
+  char int_months[12][3] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"};
+
+  int month_index = -1;
+  for (int i = 0; i<12; i++) {
+    if (strcmp(months[i], month_str) == 0 || strcmp(int_months[i], month_str) == 0) {
+      month_index = i;
+    }
+  }
+  return month_index;  
+}
+
+int check_month(char *file_time, char *month) {
+
+  if (*file_time == '*') {
+    return 1;
+  // If both month in file and month in input are numeric or both three letter abbr., will be returned here.
+  } else if (strcmp(month, file_time) == 0) {
+    return 1;
+  } 
+  
+  int file_month = return_month(file_time);
+  int input_month = return_month(month);
+
+  if (file_month != -1 && input_month != -1) {
+    if (file_month == input_month) {
+      return 1;
+    }
+  } else {
+    return 0;
+  }
+  return 0;
+}
+
+
+
+void simulate(char *tasks[], char *task_estimates[], char *month, int* total_command, int* max_command, char* most_command){
   int minutes = 0;
   int hours = 0;
   int day = 1;
@@ -61,7 +101,7 @@ void simulate(char *tasks[], char *task_estimates[], int month, int* total_comma
         // printf("%s is equal to %i\n", tasks[i*6+MINUTE_INDEX], minutes);
         if (is_now(tasks[i*6+HOUR_INDEX], hours) == 1) {
           if (is_now(tasks[i*6+DAY_INDEX], day) == 1) {
-            if (is_now(tasks[i*6+MONTH_INDEX], month) == 1) {
+            if (check_month(tasks[i*6+MONTH_INDEX], month) == 1) {
               printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
             }
           } 
@@ -137,7 +177,7 @@ int main(int argc, char *argv[]) {
   int *total_command = 0;
   int *max_command = 0;
   char *most_command = (char *) malloc(40);
-  simulate(tasks, task_times, *argv[1], total_command, max_command, most_command);
+  simulate(tasks, task_times, argv[1], total_command, max_command, most_command);
   // for (int k=0; k<5; k++) {
   //   for (int l=0; l<2; l++){
   //     if (task_times[k*2+l] == NULL) {
