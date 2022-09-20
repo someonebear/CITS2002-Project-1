@@ -1,3 +1,7 @@
+//  CITS2002 Project 1 2022
+//  Student1:   23062249   LIN ZHIHAO
+//  Student2:   23215129   DUNLOP LIAM
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
