@@ -14,13 +14,6 @@
 #define HOUR_INDEX 1
 #define MINUTE_INDEX 0
 
-struct Process {
-  char pname[50];
-  int pid;
-  int runtime;
-  int running;
-};
-
 void get_date(char line[], char *buf[]) {
   char* ptr = strtok(line, " ");
   int i = 0;
@@ -105,12 +98,31 @@ int check_weekday(char *file_time, char *month, int day) {
   return 0;
 }
 
+int process_index(char *process, char *process_estimates[]) {
+  for (int i = 0; i < 20; i++) {
+    if (process_estimates[i*2] == NULL) {
+      break;
+    }
+    if (strcmp(process, process_estimates[i*2]) == 0) {
+      return i;
+    }
+  }
+}
+
 void simulate(char *tasks[], char *task_estimates[], char *month, int* total_command, int* max_command, char* most_command){
   int minutes = 0;
   int hours = 0;
   int day = 1;
   int days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   int current_month = return_month(month);
+
+  int processes_run = 0;
+  int n_running = 0;
+  int process_count_down[20] = {0};
+  int process_counter[20] = {0};
+
+  // if space for another process, increment nrunning and processes run, increment corresponding process counter in process_counter
+  // add process countdown to proess_count_down, and decrement countdown every minute, if a countdown reaches zero, set back to null
 
   while (day < days_in_month[current_month] + 1) {
     if (minutes == 60) {
@@ -130,15 +142,40 @@ void simulate(char *tasks[], char *task_estimates[], char *month, int* total_com
           if (is_now(tasks[i*6+DAY_INDEX], day) == 1) {
             if (check_month(tasks[i*6+MONTH_INDEX], month) == 1) {
               if (check_weekday(tasks[i*6+WEEKDAY_INDEX], month, day) == 1) {
-                printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
+                if (n_running < 20) {
+                  n_running = n_running + 1;
+                  processes_run = processes_run + 1;
+                  int task_index = process_index(tasks[i*6+TASK_NAME_INDEX], task_estimates);
+                  process_counter[task_index]++;
+                  for (int j = 0; j < 20; j++) {
+                    if (process_count_down[j] == 0) {
+                      process_count_down[j] = *task_estimates[task_index*2+1];
+                    }
+                  }
+                  printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
+                }
               }
             }
           } 
         }
       }
     } 
+    for (int k = 0; k < 20; k++) {
+      if (process_count_down[k] == 0){
+        continue;
+      } else if (process_count_down[k] == 1) {
+        n_running--;
+      }
+      process_count_down[k]--;
+    }
+
+    if (n_running > *max_command) {
+      *max_command = n_running;
+    }
+    // If nrunning is larger than max_command, change value of max command
     minutes = minutes + 1;
   }
+  *total_command = processes_run;
 }
 
 void parse_file(FILE *ptr, char *buf[], char *dest[], int columns) {
@@ -174,11 +211,12 @@ int main(int argc, char *argv[]) {
   parse_file(schedule, date, tasks, 6);
   parse_file(estimates, date, task_times, 2);
   
-  int *total_command = 0;
-  int *max_command = 0;
-  char *most_command = (char *) malloc(40);
+  int *total_command = malloc(sizeof total_command);
+  int *max_command = malloc(sizeof max_command);
+  char *most_command = (char *) malloc(41);
   simulate(tasks, task_times, argv[1], total_command, max_command, most_command);
   
+  printf("commands run: %i, max commands %i", *total_command, *max_command);
 
   fclose(schedule);
   fclose(estimates);
