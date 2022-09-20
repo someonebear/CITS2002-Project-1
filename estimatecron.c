@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <time.h>
 
 #define TASK_NAME_INDEX 5
 #define WEEKDAY_INDEX 4
@@ -28,8 +28,6 @@ void get_date(char line[], char *buf[]) {
 }
 
 int is_now(char *file_time, int time) {
-  // char weekdays[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
-  
   if (*file_time == '*') {
     return 1;
   }
@@ -56,7 +54,6 @@ int return_month(char *month_str) {
 }
 
 int check_month(char *file_time, char *month) {
-
   if (*file_time == '*') {
     return 1;
   // If both month in file and month in input are numeric or both three letter abbr., will be returned here.
@@ -77,7 +74,32 @@ int check_month(char *file_time, char *month) {
   return 0;
 }
 
+int check_weekday(char *file_time, char *month, int day) {
+  char weekdays[7][4] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+  char weekday_int[7][2] = {"0", "1", "2", "3", "4", "5", "6"};
+  if (*file_time == '*') {
+    return 1;
+  }
 
+  int weekday = -1;
+  for (int i = 0; i<7; i++) {
+    if (strcmp(file_time, weekdays[i]) == 0 || strcmp(file_time, weekday_int[i]) == 0) {
+      weekday = i;
+    }
+  }
+
+  struct tm time;
+  memset(&time, 0, sizeof time);
+  time.tm_mday = day;
+  time.tm_mon = return_month(month);
+  time.tm_year = 2022 - 1900;
+
+  mktime(&time);
+  if (weekday == time.tm_wday) {
+    return 1;
+  }
+  return 0;
+}
 
 void simulate(char *tasks[], char *task_estimates[], char *month, int* total_command, int* max_command, char* most_command){
   int minutes = 0;
@@ -102,7 +124,10 @@ void simulate(char *tasks[], char *task_estimates[], char *month, int* total_com
         if (is_now(tasks[i*6+HOUR_INDEX], hours) == 1) {
           if (is_now(tasks[i*6+DAY_INDEX], day) == 1) {
             if (check_month(tasks[i*6+MONTH_INDEX], month) == 1) {
-              printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
+              if (check_weekday(tasks[i*6+WEEKDAY_INDEX], month, day) == 1) {
+                printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
+              }
+              
             }
           } 
         } else {
