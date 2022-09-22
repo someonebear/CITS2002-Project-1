@@ -15,6 +15,11 @@
 #define MINUTE_INDEX 0
 
 void get_date(char line[], char *buf[]) {
+  // Function to split line by spaces and place into buffer array.
+  char *newline = strchr(line, '\n');
+  if (newline){
+    *newline = 0;
+  }
   char* ptr = strtok(line, " ");
   int i = 0;
   while (ptr != NULL) {
@@ -25,12 +30,13 @@ void get_date(char line[], char *buf[]) {
 }
 
 int is_now(char *file_time, int time) {
+  // Function to check if time stored in variable is the same as time in file.
   if (*file_time == '*') {
     return 1;
   }
   char time_str[3];
   sprintf(time_str, "%i", time);
-  
+  // Convert int to string
   if (strcmp(file_time, time_str) == 0) {
     return 1;
   }
@@ -38,6 +44,7 @@ int is_now(char *file_time, int time) {
 }
 
 int return_month(char *month_str) {
+  // Return month as an integer, either from a three letter word, or a string integer
   char months[12][4] = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
   char int_months[12][3] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"};
 
@@ -58,6 +65,8 @@ int check_month(char *file_time, char *month) {
     return 1;
   } 
   
+  // Else if one is a string, and one is an integer as a string, will both be converted to integers here and compared.
+
   int file_month = return_month(file_time);
   int input_month = return_month(month);
 
@@ -78,6 +87,8 @@ int check_weekday(char *file_time, char *month, int day) {
     return 1;
   }
 
+  // Convert weekday from either three letter word or integer string to integer
+
   int weekday = -1;
   for (int i = 0; i<7; i++) {
     if (strcmp(file_time, weekdays[i]) == 0 || strcmp(file_time, weekday_int[i]) == 0) {
@@ -85,6 +96,8 @@ int check_weekday(char *file_time, char *month, int day) {
     }
   }
 
+  // Check date in year is actually the specified weekday.
+  
   struct tm time;
   memset(&time, 0, sizeof time);
   time.tm_mday = day;
@@ -99,6 +112,7 @@ int check_weekday(char *file_time, char *month, int day) {
 }
 
 int process_index(char *process, char *process_estimates[]) {
+  // Return the index of the process name in estimates file
   for (int i = 0; i < 20; i++) {
     if (process_estimates[i*2] == NULL) {
       break;
@@ -109,7 +123,7 @@ int process_index(char *process, char *process_estimates[]) {
   }
 }
 
-void simulate(char *tasks[], char *task_estimates[], char *month, int* total_command, int* max_command, char* most_command){
+int simulate(char *tasks[], char *task_estimates[], char *month, int* total_command, int* max_command, char* most_command){
   int minutes = 0;
   int hours = 0;
   int day = 1;
@@ -118,11 +132,10 @@ void simulate(char *tasks[], char *task_estimates[], char *month, int* total_com
 
   int processes_run = 0;
   int n_running = 0;
+  int most_running = 0;
+
   int process_count_down[20] = {0};
   int process_counter[20] = {0};
-
-  // if space for another process, increment nrunning and processes run, increment corresponding process counter in process_counter
-  // add process countdown to proess_count_down, and decrement countdown every minute, if a countdown reaches zero, set back to null
 
   while (day < days_in_month[current_month] + 1) {
     if (minutes == 60) {
@@ -133,7 +146,7 @@ void simulate(char *tasks[], char *task_estimates[], char *month, int* total_com
       day = day + 1;
       hours = 0;
     }
-
+    
     for (int i = 0; i < 20; i++) {
       if (tasks[i*6+TASK_NAME_INDEX] == NULL) {
         break;
@@ -146,13 +159,14 @@ void simulate(char *tasks[], char *task_estimates[], char *month, int* total_com
                   n_running = n_running + 1;
                   processes_run = processes_run + 1;
                   int task_index = process_index(tasks[i*6+TASK_NAME_INDEX], task_estimates);
+                  // printf("%s, %i\n", tasks[i*6+TASK_NAME_INDEX], task_index);
                   process_counter[task_index]++;
                   for (int j = 0; j < 20; j++) {
                     if (process_count_down[j] == 0) {
-                      process_count_down[j] = *task_estimates[task_index*2+1];
+                      process_count_down[j] = atoi(task_estimates[task_index*2+1]);
+                      break;
                     }
                   }
-                  printf("The day is %i, and the task is %s\n", day, tasks[i*6+TASK_NAME_INDEX]);
                 }
               }
             }
@@ -169,16 +183,31 @@ void simulate(char *tasks[], char *task_estimates[], char *month, int* total_com
       process_count_down[k]--;
     }
 
-    if (n_running > *max_command) {
-      *max_command = n_running;
+    if (n_running > most_running) {
+      most_running = n_running;
     }
     // If nrunning is larger than max_command, change value of max command
     minutes = minutes + 1;
   }
   *total_command = processes_run;
+  *max_command = most_running;
+
+  int max = 0;
+  int max_index = -1;
+  for (int l = 0; l < 20; l++) {
+    if (process_counter[l] > max) {
+      max = process_counter[l];
+      max_index = l;
+    }
+  }
+  
+  return max_index;
 }
 
 void parse_file(FILE *ptr, char *buf[], char *dest[], int columns) {
+
+  // Read file into array
+
   int i = 0;
   char line[100];
   while (fgets(line, sizeof line, ptr) != NULL) {
@@ -201,10 +230,19 @@ int main(int argc, char *argv[]) {
   char *tasks[120] = {NULL};
   char *task_times[20] = {NULL};
 
-  schedule = fopen("crontab-file.txt", "r");
-  estimates = fopen("estimates-file.txt", "r");
+  char f1[256];
+  strcpy(f1, argv[2]);
+  strcat(f1, ".txt");
+
+  char f2[256];
+  strcpy(f2, argv[3]);
+  strcat(f2, ".txt");
+
+  schedule = fopen(f1, "r");
+  estimates = fopen(f2, "r");
   if (schedule == NULL || estimates == NULL) {
     printf("error opening file\n");
+    exit(0);
   }
 
   // Reading file into array
@@ -214,10 +252,19 @@ int main(int argc, char *argv[]) {
   int *total_command = malloc(sizeof total_command);
   int *max_command = malloc(sizeof max_command);
   char *most_command = (char *) malloc(41);
-  simulate(tasks, task_times, argv[1], total_command, max_command, most_command);
+  int max_index = simulate(tasks, task_times, argv[1], total_command, max_command, most_command);
   
-  printf("commands run: %i, max commands %i", *total_command, *max_command);
+  if (max_index == -1) {
+    char def[5] = "none";
+    printf("%s\t%i\t%i\n", def, *total_command, *max_command);
+  } else {
+    most_command = task_times[max_index*2];
+    printf("%s\t%i\t%i\n", most_command, *total_command, *max_command);
+  }
 
+  free(total_command);
+  free(max_command);
+  free(most_command);
   fclose(schedule);
   fclose(estimates);
   return 0;
